@@ -1,38 +1,69 @@
 dirs = {
     "/": {
-        "size": 0
+        "size": 0,
+        "parent": None
     }
 }
 cwd = dirs["/"]
 
-def chdir(cwd, newdir):
+def chdir(newdir):
+    global cwd
     if newdir == "/":
         cwd = dirs["/"]
-    if newdir == "..":
-        return cwd["parent"]
-    cwd[newdir] = {
-        "parent": cwd,
-        
-    }
-        return cwd + "/" + newdir
+    elif newdir == "..":
+        cwd = cwd["parent"]
+    elif newdir not in cwd:
+        cwd[newdir] = {
+            "parent": cwd,
+            "size": 0,
+        }
+        cwd = cwd[newdir]
     
-def addup(path, amount):
-    cwd = dirs['/']
+def addup(amount):
     cwd['size'] += amount
-    for dir in path.split('/'):
-        cwd = cwd[dir]
-        cws['size'] += amount
-        
-with open("input.txt") as f:
-    curdir = "root"
+    p = cwd['parent']
+    while p:
+        p['size'] += amount
+        p = p['parent']
+
+def sumsmall(dir):
+    sumthis = 0
+    if dir["size"] <= 100000:
+        sumthis = dir["size"]
+    for subdir in dir:
+        if subdir in ("size", "parent"):
+            continue
+        sumthis += sumsmall(dir[subdir])
+    return sumthis
+
+def leastbig(dir, amount):
+    if dir["size"] < amount:
+        return None
+
+    least = dir["size"]
+    for subdir in dir:
+        if subdir in ("size", "parent"):
+            continue
+        potential_least = leastbig(dir[subdir], amount)
+        if potential_least and potential_least < least:
+            least = potential_least
+    return least
+
+with open("input") as f:
     for line in f:
         tokens = line.strip().split()
         if tokens[0] == "$":
             if tokens[1] == "cd":
-                curdir = chdir(curdir, tokens[2])
+                chdir(tokens[2])
             else:
                 continue
         elif tokens[0] == "dir":
             continue
         else:
-            addup(curdir, int(tokens[0]))
+            addup(int(tokens[0]))
+
+# part 1
+print(sumsmall(dirs["/"]))
+
+# part 2
+print(leastbig(dirs["/"], dirs["/"]["size"]-40000000))
